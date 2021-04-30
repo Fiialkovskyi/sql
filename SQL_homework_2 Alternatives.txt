@@ -1,0 +1,54 @@
+mysql> SELECT * FROM table_a  left outer join table_b  ON table_a.name = table_b.name UNION SELECT * FROM table_a  right outer join table_b  ON table_a.name = table_b.name;
++------+-----------+------+-------------+
+| id   | name      | id   | name        |
++------+-----------+------+-------------+
+|    2 | Monkey    | NULL | NULL        |
+|    3 | Ninja     |    4 | Ninja       |
+|    1 | Pirate    |    2 | Pirate      |
+|    4 | Spaghetti | NULL | NULL        |
+| NULL | NULL      |    3 | Darth Vader |
+| NULL | NULL      |    1 | Rutabaga    |
++------+-----------+------+-------------+
+6 rows in set (0.00 sec)
+
+mysql> EXPLAIN SELECT * FROM table_a  left outer join table_b  ON table_a.name = table_b.name UNION SELECT * FROM table_a  right outer join table_b  ON table_a.name = table_b.name;
++----+--------------+------------+------------+-------+---------------+------------+---------+--------------------+------+----------+-----------------+
+| id | select_type  | table      | partitions | type  | possible_keys | key        | key_len | ref                | rows | filtered | Extra           |
++----+--------------+------------+------------+-------+---------------+------------+---------+--------------------+------+----------+-----------------+
+|  1 | PRIMARY      | table_a    | NULL       | index | NULL          | name_index | 102     | NULL               |    4 |   100.00 | Using index     |
+|  1 | PRIMARY      | table_b    | NULL       | ref   | name_index    | name_index | 102     | task2.table_a.name |    1 |   100.00 | Using index     |
+|  2 | UNION        | table_b    | NULL       | index | NULL          | name_index | 102     | NULL               |    4 |   100.00 | Using index     |
+|  2 | UNION        | table_a    | NULL       | ref   | name_index    | name_index | 102     | task2.table_b.name |    1 |   100.00 | Using index     |
+| NULL | UNION RESULT | <union1,2> | NULL       | ALL   | NULL          | NULL       | NULL    | NULL               | NULL |     NULL | Using temporary |
++----+--------------+------------+------------+-------+---------------+------------+---------+--------------------+------+----------+-----------------+
+5 rows in set, 1 warning (0.00 sec)
+
+mysql> SELECT * FROM table_a left outer join table_b ON table_a.name = table_b.name WHERE table_a.id is null or table_b.id is null UNION SELECT * FROM table_a right outer join table_b ON table_a.name = table_b.name WHERE table_a.id is null or table_b.id is null;
+ERROR 2013 (HY000): Lost connection to MySQL server during query
+mysql> SELECT * FROM table_a left outer join table_b ON table_a.name = table_b.name WHERE table_a.id is null or table_b.id is null UNION SELECT * FROM table_a right outer join table_b ON table_a.name = table_b.name WHERE table_a.id is null or table_b.id is null;
+ERROR 2006 (HY000): MySQL server has gone away
+No connection. Trying to reconnect...
+Connection id:    202
+Current database: task2
+
++------+-----------+------+-------------+
+| id   | name      | id   | name        |
++------+-----------+------+-------------+
+|    2 | Monkey    | NULL | NULL        |
+|    4 | Spaghetti | NULL | NULL        |
+| NULL | NULL      |    3 | Darth Vader |
+| NULL | NULL      |    1 | Rutabaga    |
++------+-----------+------+-------------+
+4 rows in set (0.00 sec)
+
+mysql> EXPLAIN SELECT * FROM table_a left outer join table_b ON table_a.name = table_b.name WHERE table_a.id is null or table_b.id is null UNION SELECT * FROM table_a right outer join table_b ON table_a.name = table_b.name WHERE table_a.id is null or table_b.id is null;
++----+--------------+------------+------------+-------+---------------+------------+---------+--------------------+------+----------+--------------------------------------+
+| id | select_type  | table      | partitions | type  | possible_keys | key        | key_len | ref                | rows | filtered | Extra                                |
++----+--------------+------------+------------+-------+---------------+------------+---------+--------------------+------+----------+--------------------------------------+
+|  1 | PRIMARY      | table_a    | NULL       | index | NULL          | name_index | 102     | NULL               |    4 |   100.00 | Using index                          |
+|  1 | PRIMARY      | table_b    | NULL       | ref   | name_index    | name_index | 102     | task2.table_a.name |    1 |    25.00 | Using where; Not exists; Using index |
+|  2 | UNION        | table_b    | NULL       | index | NULL          | name_index | 102     | NULL               |    4 |   100.00 | Using index                          |
+|  2 | UNION        | table_a    | NULL       | ref   | name_index    | name_index | 102     | task2.table_b.name |    1 |    25.00 | Using where; Not exists; Using index |
+| NULL | UNION RESULT | <union1,2> | NULL       | ALL   | NULL          | NULL       | NULL    | NULL               | NULL |     NULL | Using temporary                      |
++----+--------------+------------+------------+-------+---------------+------------+---------+--------------------+------+----------+--------------------------------------+
+5 rows in set, 1 warning (0.00 sec)
